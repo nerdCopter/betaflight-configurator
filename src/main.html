@@ -87,6 +87,7 @@
     <script type="text/javascript" src="./js/utils/VtxDeviceStatus/TrampDeviceStatus.js"></script>
     <script type="text/javascript" src="./js/utils/VtxDeviceStatus/SmartAudioDeviceStatus.js"></script>
     <script type="text/javascript" src="./js/utils/VtxDeviceStatus/Rtc6705DeviceStatus.js"></script>
+    <script type="text/javascript" src="./js/helper.js"></script>
     <script type="text/javascript" src="./js/ConfigStorage.js"></script>
     <script type="text/javascript" src="./js/SessionStorage.js"></script>
     <script type="text/javascript" src="./js/data_storage.js"></script>
@@ -184,9 +185,9 @@
         </div>
         <betaflight-logo
             :configurator-version="CONFIGURATOR.getDisplayVersion()"
-            :firmware-version="FC.CONFIG.flightControllerVersion" 
-            :firmware-id="FC.CONFIG.flightControllerIdentifier" 
-            :hardware-id="FC.CONFIG.hardwareName" 
+            :firmware-version="FC.CONFIG.flightControllerVersion"
+            :firmware-id="FC.CONFIG.flightControllerIdentifier"
+            :hardware-id="FC.CONFIG.hardwareName"
         ></betaflight-logo>
         <div id="port-picker">
             <div id="port-override-option">
@@ -243,7 +244,7 @@
                         <div class="battery-status"></div>
                     </div>
                 </div>
-                <battery-legend 
+                <battery-legend
                     :voltage="FC.ANALOG.voltage"
                     :vbatmaxcellvoltage="FC.BATTERY_CONFIG.vbatmaxcellvoltage"
                 ></battery-legend>
@@ -319,9 +320,9 @@
         <div class="tab_container">
             <betaflight-logo
                 :configurator-version="CONFIGURATOR.getDisplayVersion()"
-                :firmware-version="FC.CONFIG.flightControllerVersion" 
-                :firmware-id="FC.CONFIG.flightControllerIdentifier" 
-                :hardware-id="FC.CONFIG.hardwareName" 
+                :firmware-version="FC.CONFIG.flightControllerVersion"
+                :firmware-id="FC.CONFIG.flightControllerIdentifier"
+                :hardware-id="FC.CONFIG.hardwareName"
             ></betaflight-logo>
             <div id="tabs">
                 <ul class="mode-disconnected">
@@ -398,9 +399,9 @@
             :cpu-load="FC.CONFIG.cpuload"
 
             :configurator-version="CONFIGURATOR.getDisplayVersion()"
-            :firmware-version="FC.CONFIG.flightControllerVersion" 
-            :firmware-id="FC.CONFIG.flightControllerIdentifier" 
-            :hardware-id="FC.CONFIG.hardwareName" 
+            :firmware-version="FC.CONFIG.flightControllerVersion"
+            :firmware-id="FC.CONFIG.flightControllerIdentifier"
+            :hardware-id="FC.CONFIG.hardwareName"
     ></status-bar>
     <div id="cache">
         <div class="data-loading">
