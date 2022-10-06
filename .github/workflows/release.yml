@@ -33,12 +33,12 @@ jobs:
     needs: ci
     runs-on: ubuntu-22.04
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2  #required to have correct SHA/branch if not releasing master
       - name: Fetch build artifacts
         uses: actions/download-artifact@v2
         with:
           path: release-assets/
-      - name: Checkout
-        uses: actions/checkout@v2  #required to have correct SHA/branch if not releasing master
       - name: Release
         uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5 # v0.1.14
         with:
