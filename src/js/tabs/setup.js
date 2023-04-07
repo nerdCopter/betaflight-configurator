@@ -16,6 +16,10 @@ const setup = {
     yaw_fix: 0.0,
 };
 
+function toFarenheit(celcius) {
+    return (celcius * 9/5) + 32;  // °F = (°C × 9/5) + 32
+}
+
 setup.initialize = function (callback) {
     const self = this;
 
@@ -405,7 +409,8 @@ setup.initialize = function (callback) {
                 bat_mah_drawing_e.text(i18n.getMessage('initialSetupBatteryAValue', [FC.ANALOG.amperage.toFixed(2)]));
                 rssi_e.text(i18n.getMessage('initialSetupRSSIValue', [((FC.ANALOG.rssi / 1023) * 100).toFixed(0)]));
                 if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_46)) {
-                    cputemp_e.html(`${FC.CONFIG.cpuTemp.toFixed(0)} &#8451;`);
+                    let farenheit = toFarenheit(FC.CONFIG.cpuTemp);
+                    cputemp_e.html(`${FC.CONFIG.cpuTemp.toFixed(0)} &#8451; &#8776; ${farenheit.toFixed(0)} &#8457;`);
                 }
             });
         }
