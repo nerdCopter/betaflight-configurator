@@ -636,6 +636,11 @@ led_strip.initialize = function (callback, scrollPosition) {
             $('div.rainbowFreqSlider label').first().text(val);
         });
 
+        if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_46)) {
+            $('div.rainbowFreqSlider input').show();
+        } else {
+            $('div.rainbowFreqSlider input').hide();
+        }
 
         $('a.save').on('click', function () {
             mspHelper.sendLedStripConfig(send_led_strip_colors);

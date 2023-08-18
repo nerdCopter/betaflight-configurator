@@ -1298,13 +1298,18 @@ MspHelper.prototype.process_data = function(dataHandler) {
                 console.log('Led strip mode colors saved');
                 break;
             case MSPCodes.MSP_LED_STRIP_CONFIG_VALUES:
-                FC.LED_CONFIG_VALUES = {
-                    brightness: data.readU8(),
-                    rainbow_delta: data.readU8(),
-                    rainbow_freq: data.readU16(),
-                };
+                if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_46)) {
+                    FC.LED_CONFIG_VALUES = {
+                        brightness: data.readU8(),
+                        rainbow_delta: data.readU8(),
+                        rainbow_freq: data.readU16(),
+                    };
+                }
                 break;
             case MSPCodes.MSP_SET_LED_STRIP_CONFIG_VALUES:
+                if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_46)) {
+                    //future?
+                }
                 break;
             case MSPCodes.MSP_DATAFLASH_SUMMARY:
                 if (data.byteLength >= 13) {
@@ -2640,11 +2645,13 @@ MspHelper.prototype.sendLedStripModeColors = function(onCompleteCallback) {
 };
 
 MspHelper.prototype.sendLedStripConfigValues = function(onCompleteCallback) {
-    const buffer = [];
-    buffer.push8(FC.LED_CONFIG_VALUES.brightness);
-    buffer.push8(FC.LED_CONFIG_VALUES.rainbow_delta);
-    buffer.push16(FC.LED_CONFIG_VALUES.rainbow_freq);
-    MSP.send_message(MSPCodes.MSP_SET_LED_STRIP_CONFIG_VALUES, buffer, false, onCompleteCallback);
+    if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_46)) {
+        const buffer = [];
+        buffer.push8(FC.LED_CONFIG_VALUES.brightness);
+        buffer.push8(FC.LED_CONFIG_VALUES.rainbow_delta);
+        buffer.push16(FC.LED_CONFIG_VALUES.rainbow_freq);
+        MSP.send_message(MSPCodes.MSP_SET_LED_STRIP_CONFIG_VALUES, buffer, false, onCompleteCallback);
+    }
 };
 
 MspHelper.prototype.serialPortFunctionMaskToFunctions = function(functionMask) {
