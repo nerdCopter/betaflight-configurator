@@ -187,7 +187,7 @@
         "message": "Ви використовуєте застарілу версію <b>Betaflight Configurator</b>.<br>$t(configuratorUpdateHelp.message)"
     },
     "configuratorUpdateHelp": {
-        "message": "Використання новішої версії прошивки із застарілою версією конфігуратора означає, що зміна деяких налаштувань призведе до <strong>пошкодження конфігурації прошивки та непрацездатності апарата</strong>. Крім того, деякі функції прошивки можна буде налаштувати лише в Командному Рядку.<br><strong>Betaflight Configurator версія <b>$1</b> доступна для онлайн завантаження</strong>, будь ласка, відвідайте <a href=\"$2\" target=\"_blank\" rel=\"noopener noreferrer\">цю сторінку</a> для завантаження та встановлення крайньої версії з виправленнями та покращеннями.<br>Будь ласка, закрийте вікно конфігуратора перед оновленням."
+        "message": "Використання новішої версії прошивки із застарілою версією конфігуратора означає, що зміна деяких налаштувань призведе до <strong>пошкодження конфігурації прошивки та неробочого судна</strong>.<br />Більше того, деякі функції прошивки можна буде налаштувати лише в командному рядку.<br g/><br /><strong>Betaflight Configurator версії <b>$1</b> доступний для завантаження в мережі</strong>.<br />Завантажте і встановіть найновішу версію конфігуратора з виправленнями і покращеннями <a href=\"$2\" target=\"_blank\" rel=\"noopener noreferrer\">тут</a><br>Вікно конфігуратора потрібно закрити перед оновленням."
     },
     "configuratorUpdateWebsite": {
         "message": "Перейти на сайт з Релізами"
@@ -433,10 +433,10 @@
         "message": "Виявлено наступні <strong>проблеми з конфігуратором</strong>:"
     },
     "reportProblemsDialogFooter": {
-        "message": "Будь ласка, <strong>виправте ці проблеми, перш ніж спробуєте злетіти своїм апаратом</strong>."
+        "message": "<span class=\"message-negative\"><strong>Вам потрібно виправити ці проблеми, перш ніж спробуєте злетіти своїм апаратом</span></strong>."
     },
     "reportProblemsDialogAPI_VERSION_MAX_SUPPORTED": {
-        "message": "<strong>Версія конфігуратора, який ви використовуєте ($3), старіша за прошивку, яку ви використовуєте ($4)</strong>.<br>$t(configuratorUpdateHelp.message)"
+        "message": "<span class=\"message-negative\"><strong>Використана версія конфігуратора ($3) не підтримує прошивку $4</strong></span>.<br>$t(configuratorUpdateHelp.message)"
     },
     "reportProblemsDialogMOTOR_PROTOCOL_DISABLED": {
         "message": "<strong>Протокол вихідного сигналу мотора не вибрано</strong>.<br>Будь ласка, виберіть протокол виводу мотора, відповідний до вашого електронного контролера швидкості ESC '$t(configurationEscFeatures.message)' на '$t(tabMotorTesting.message)' вкладці.<br>$t(escProtocolDisabledMessage.message)"
@@ -695,7 +695,7 @@
         "message": "Скинути налаштування"
     },
     "initialSetupResetText": {
-        "message": "Відновити налаштування до <strong>значень за замовчуванням</strong>"
+        "message": "Скинути польотний контролер до <strong>неналаштованого стану.</strong>"
     },
     "initialSetupButtonBackup": {
         "message": "Резервне копіювання JSON"
@@ -810,6 +810,9 @@
     },
     "initialSetupCpuTemp": {
         "message": "Температура процесора:"
+    },
+    "initialSetupCpuTempNotSupported": {
+        "message": "Не підтримується версіями MSP API до 1.46"
     },
     "initialSetupRSSI": {
         "message": "RSSI: "
@@ -1004,8 +1007,8 @@
     "initialSetupInfoBuild": {
         "message": "Інформація прошивки"
     },
-    "initialSetupInfoBuildHelp": {
-        "message": "Показує інформацію про збірку прошивки. Конфігурація збірки та журнал збірки посилаються на інформацію з хмари, знайдену за допомогою ключа збірки",
+    "initialSetupInfoFirmwareHelp": {
+        "message": "Показує інформацію для збірки прошивки, потребує підключення до сервера збірки. <br> Опції показують визначені опції, що використовувались в хмарній збірці. <br> Посилання на журнал та налаштування показують хмарну інформацію за ключем, збереженим у прошивці. <br> Під час локальної збірки розділ порожній.",
         "description": "Message that pops up to describe the Build / Firmware section"
     },
     "initialSetupInfoBuildDate": {
@@ -1017,20 +1020,20 @@
     "initialSetupInfoBuildInfoKey": {
         "message": "Ключ збірки"
     },
-    "initialSetupInfoBuildInfoConfig": {
+    "initialSetupInfoBuildConfig": {
         "message": "Конфігурація"
     },
-    "initialSetupInfoBuildInfoLog": {
+    "initialSetupInfoBuildLog": {
         "message": "Журнал"
     },
     "initialSetupInfoBuildOptions": {
-        "message": "Параметри збірки:"
+        "message": "Опції"
     },
-    "initialSetupInfoBuildOptionsList": {
-        "message": "Використані директиви препроцесора"
+    "initialSetupInfoBuildOptionList": {
+        "message": "Опції, визначені в збірці прошивки"
     },
-    "initialSetupInfoBuildOptionsEmpty": {
-        "message": "Локальна збірка - без директив препроцесору"
+    "initialSetupInfoBuildEmpty": {
+        "message": "Локальна збірка - без хмарних даних"
     },
     "initialSetupNotOnline": {
         "message": "Сервер недоступний"
@@ -6849,7 +6852,7 @@
         "message": "Підтвердити"
     },
     "dialogConfirmResetNote": {
-        "message": "УВАГА: Ви впевнені, що хочете скинути <strong>УСІ налаштування</strong> до налаштувань за замовчуванням? Це <strong>не</strong> є \"скидання до заводських налаштувань\". Це може призвести до непередбачуваних проблем, і, можливо, доведеться знову прошивати пристрій, щоб знову під'єднатися до нього."
+        "message": "УВАГА: Ви впевнені, що хочете скинути <strong>УСІ налаштування</strong> до неналаштованого стану? Це <strong>не</strong> є \"скидання до заводських налаштувань\". Це може призвести до непередбачуваних проблем, і, можливо, доведеться знову прошивати пристрій, щоб знову під'єднатися до нього."
     },
     "dialogConfirmResetConfirm": {
         "message": "Скинути"

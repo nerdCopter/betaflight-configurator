@@ -267,7 +267,7 @@
         "message": "You are using an outdated version of the <b>Betaflight Configurator</b>.<br>$t(configuratorUpdateHelp.message)"
     },
     "configuratorUpdateHelp": {
-        "message": "Using a newer version of the firmware with an outdated version of Configurator means that changing some settings will result in a <strong>corrupted firmware configuration and a non-working craft</strong>. Furthermore, some features of the firmware will only be configurable in CLI.<br><strong>Betaflight Configurator version <b>$1</b> is available for download online</strong>, please visit <a href=\"$2\" target=\"_blank\" rel=\"noopener noreferrer\">this page</a> to download and install the latest version with fixes and improvements.<br>Please close the configurator window before updating."
+        "message": "Using a newer version of the firmware with an outdated version of Configurator means that changing some settings will result in a <strong>corrupted firmware configuration and a non-working craft</strong>.<br />Furthermore, some features of the firmware will only be configurable in CLI.<br g/><br /><strong>Betaflight Configurator version <b>$1</b> is available for download online</strong>.<br />Download and install the latest version of configurator with fixes and improvements <a href=\"$2\" target=\"_blank\" rel=\"noopener noreferrer\">here</a><br>Configurator window needs to be closed before updating."
     },
     "configuratorUpdateWebsite": {
         "message": "Go to Release Website"
@@ -517,10 +517,10 @@
         "message": "The following <strong>problems with your configuration</strong> were detected:"
     },
     "reportProblemsDialogFooter": {
-        "message": "Please <strong>fix these problems before attempting to fly your craft</strong>."
+        "message": "<span class=\"message-negative\"><strong>You need to fix these problems before attempting to fly your craft</span></strong>."
     },
     "reportProblemsDialogAPI_VERSION_MAX_SUPPORTED": {
-        "message": "<strong>the version of configurator that you are using ($3) is older than the firmware you are using ($4)</strong>.<br>$t(configuratorUpdateHelp.message)"
+        "message": "<span class=\"message-negative\"><strong>The configurator version used ($3) does not support firmware $4</strong></span>.<br>$t(configuratorUpdateHelp.message)"
     },
     "reportProblemsDialogMOTOR_PROTOCOL_DISABLED": {
         "message": "<strong>there is no motor output protocol selected</strong>.<br>Please select a motor output protocol appropriate for your ESCs in '$t(configurationEscFeatures.message)' on the '$t(tabMotorTesting.message)' tab.<br>$t(escProtocolDisabledMessage.message)"
@@ -779,7 +779,7 @@
         "message": "Reset Settings"
     },
     "initialSetupResetText": {
-        "message": "Restore settings to <strong>default</strong>"
+        "message": "Reset the flight controller to an <strong>unconfigured state.</strong>"
     },
     "initialSetupButtonBackup": {
         "message": "Backup JSON"
@@ -894,6 +894,9 @@
     },
     "initialSetupCpuTemp": {
         "message": "CPU Temperature:"
+    },
+    "initialSetupCpuTempNotSupported": {
+        "message": "No support from MSP API before 1.46"
     },
     "initialSetupRSSI": {
         "message": "RSSI:"
@@ -1088,8 +1091,8 @@
     "initialSetupInfoBuild": {
         "message": "Firmware info"
     },
-    "initialSetupInfoBuildHelp": {
-        "message": "Shows information regarding the build of firmware. The Build Config and Bulid Log links to the cloud information found by the Build key",
+    "initialSetupInfoFirmwareHelp": {
+        "message": "Shows information for firmware Build, require online to Build server.<br>Options show Defined options used in Cloud Build.<br>Log and Config links show cloud information by key stored in firmware.<br>At local Build, section are empty.",
         "description": "Message that pops up to describe the Build / Firmware section"
     },
     "initialSetupInfoBuildDate": {
@@ -1101,20 +1104,20 @@
     "initialSetupInfoBuildInfoKey": {
         "message": "Build key"
     },
-    "initialSetupInfoBuildInfoConfig": {
+    "initialSetupInfoBuildConfig": {
         "message": "Config"
     },
-    "initialSetupInfoBuildInfoLog": {
+    "initialSetupInfoBuildLog": {
         "message": "Log"
     },
     "initialSetupInfoBuildOptions": {
-        "message": "Build Options:"
+        "message": "Options"
     },
-    "initialSetupInfoBuildOptionsList": {
-        "message": "Defines used"
+    "initialSetupInfoBuildOptionList": {
+        "message": "Options defined in firmware build"
     },
-    "initialSetupInfoBuildOptionsEmpty": {
-        "message": "Local Build - no Defines used"
+    "initialSetupInfoBuildEmpty": {
+        "message": "Local Build - no Cloud information"
     },
     "initialSetupNotOnline": {
         "message": "Server unavailable"
@@ -6960,7 +6963,7 @@
         "message": "Confirm"
     },
     "dialogConfirmResetNote": {
-        "message": "WARNING: Are you sure you want to reset <strong>ALL settings</strong> to default? This is <strong>not</strong> a \"factory reset\". It may cause unexpected issues, and it may be necessary to re-flash your firmware to be able to connect again."
+        "message": "WARNING: Are you sure you want to reset <strong>ALL settings</strong> to an unconfigured state? This is <strong>not</strong> a \"factory reset\". It may cause unexpected issues, and it may be necessary to re-flash your firmware to be able to connect again."
     },
     "dialogConfirmResetConfirm": {
         "message": "Reset"
