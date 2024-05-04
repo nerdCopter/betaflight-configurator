@@ -12,7 +12,7 @@ import FC from '../fc';
 import MSP from '../msp';
 import MSPCodes from '../msp/MSPCodes';
 import PortHandler, { usbDevices } from '../port_handler';
-import { API_VERSION_1_39, API_VERSION_1_45 } from '../data_storage';
+import { API_VERSION_1_39, API_VERSION_1_45, API_VERSION_1_46 } from '../data_storage';
 import serial from '../serial';
 import STM32DFU from '../protocols/stm32usbdfu';
 import { gui_log } from '../gui_log';
@@ -380,6 +380,8 @@ firmware_flasher.initialize = function (callback) {
                     }
 
                     $('div.expertOptions').toggle(expertMode);
+                    // Need to reset core build mode
+                    $('input.corebuild_mode').trigger('change');
                 }
 
                 if (response.configuration && !self.isConfigLocal) {
@@ -391,10 +393,12 @@ firmware_flasher.initialize = function (callback) {
 
             self.buildApi.loadTarget(target, release, onTargetDetail);
 
-            if (self.validateBuildKey() && navigator.onLine) {
-                self.buildApi.loadOptionsByBuildKey(release, self.cloudBuildKey, buildOptions);
+            const OnInvalidBuildKey = () => self.buildApi.loadOptions(release, buildOptions);
+
+            if (self.validateBuildKey()) {
+                self.buildApi.loadOptionsByBuildKey(release, self.cloudBuildKey, buildOptions, OnInvalidBuildKey);
             } else {
-                self.buildApi.loadOptions(release, buildOptions);
+                OnInvalidBuildKey();
             }
         }
 
@@ -991,8 +995,8 @@ firmware_flasher.initialize = function (callback) {
         const targetSupportInfo = $('#targetSupportInfoUrl');
 
         targetSupportInfo.on('click', function() {
-            let urlSupport = 'https://betaflight.com/docs/wiki/boards/missing';                 // general board missing
-            const urlBoard = `https://betaflight.com/docs/wiki/boards/${self.selectedBoard}`;   // board description
+            let urlSupport = 'https://betaflight.com/docs/wiki/boards/archive/Missing';                 // general board missing
+            const urlBoard = `https://betaflight.com/docs/wiki/boards/current/${self.selectedBoard}`;   // board description
             if (urlExists(urlBoard)) {
                 urlSupport = urlBoard;
             }
@@ -1012,6 +1016,7 @@ firmware_flasher.initialize = function (callback) {
 
         $('a.flash_firmware').on('click', function () {
             self.isFlashing = true;
+            const isFlashOnConnect = $('input.flash_on_connect').is(':checked');
 
             self.enableFlashButton(false);
             self.enableDfuExitButton(false);
@@ -1019,7 +1024,7 @@ firmware_flasher.initialize = function (callback) {
             self.enableLoadFileButton(false);
 
             function initiateFlashing() {
-                if (self.developmentFirmwareLoaded) {
+                if (self.developmentFirmwareLoaded && !isFlashOnConnect) {
                     checkShowAcknowledgementDialog();
                 } else {
                     startFlashing();
@@ -1027,7 +1032,8 @@ firmware_flasher.initialize = function (callback) {
             }
 
             // Backup not available in DFU, manual or virtual mode.
-            if (self.isSerialPortAvailable()) {
+            // When flash on connect is enabled, the backup dialog is not shown.
+            if (self.isSerialPortAvailable() && !isFlashOnConnect) {
                 GUI.showYesNoDialog(
                     {
                         title: i18n.getMessage('firmwareFlasherRemindBackupTitle'),
@@ -1117,6 +1123,8 @@ firmware_flasher.initialize = function (callback) {
                     } catch (e) {
                         console.log(`Flashing failed: ${e.message}`);
                     }
+                    // Disable flash on connect after flashing to prevent continuous flashing
+                    $('input.flash_on_connect').prop('checked', false).change();
                 } else {
                     $('span.progressLabel').attr('i18n','firmwareFlasherFirmwareNotLoaded').removeClass('i18n-replaced');
                     i18n.localizePage();
@@ -1197,6 +1205,9 @@ firmware_flasher.initialize = function (callback) {
 
                 catch_new_port();
             } else {
+                // Cancel the flash on connect
+                GUI.timeout_remove('initialization_timeout');
+
                 PortHandler.flush_callbacks();
             }
         }).change();
@@ -1224,7 +1235,7 @@ firmware_flasher.updateDetectBoardButton = function() {
 };
 
 firmware_flasher.validateBuildKey = function() {
-    return this.cloudBuildKey?.length === 32;
+    return this.cloudBuildKey?.length === 32 && navigator.onLine;
 };
 
 /**
@@ -1235,7 +1246,9 @@ firmware_flasher.validateBuildKey = function() {
 firmware_flasher.verifyBoard = function() {
     const self = this;
 
-    if (!self.isSerialPortAvailable()) {
+    const isFlashOnConnect = $('input.flash_on_connect').is(':checked');
+
+    if (!self.isSerialPortAvailable() || isFlashOnConnect) {
         // return silently as port-picker will trigger again when port becomes available
         return;
     }
@@ -1291,7 +1304,13 @@ firmware_flasher.verifyBoard = function() {
     }
 
     function getBoardInfo() {
-        MSP.send_message(MSPCodes.MSP_BOARD_INFO, false, false, onFinish);
+        MSP.send_message(MSPCodes.MSP_BOARD_INFO, false, false, function() {
+            if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_46)) {
+                FC.processBuildOptions();
+                self.cloudBuildOptions = FC.CONFIG.buildOptions;
+            }
+            onFinish();
+        });
     }
 
     function getCloudBuildOptions(options) {
@@ -1301,20 +1320,24 @@ firmware_flasher.verifyBoard = function() {
         getBoardInfo();
     }
 
-    function getBuildInfo() {
-        if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_45) && navigator.onLine && FC.CONFIG.flightControllerIdentifier === 'BTFL') {
-            MSP.send_message(MSPCodes.MSP2_GET_TEXT, mspHelper.crunch(MSPCodes.MSP2_GET_TEXT, MSPCodes.BUILD_KEY), false, () => {
-                MSP.send_message(MSPCodes.MSP2_GET_TEXT, mspHelper.crunch(MSPCodes.MSP2_GET_TEXT, MSPCodes.CRAFT_NAME), false, () => {
-                    // store FC.CONFIG.buildKey as the object gets destroyed after disconnect
-                    self.cloudBuildKey = FC.CONFIG.buildKey;
+    async function getBuildInfo() {
+        if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_45) && FC.CONFIG.flightControllerIdentifier === 'BTFL') {
+            await MSP.promise(MSPCodes.MSP2_GET_TEXT, mspHelper.crunch(MSPCodes.MSP2_GET_TEXT, MSPCodes.BUILD_KEY));
+            await MSP.promise(MSPCodes.MSP2_GET_TEXT, mspHelper.crunch(MSPCodes.MSP2_GET_TEXT, MSPCodes.CRAFT_NAME));
+            await MSP.promise(MSPCodes.MSP_BUILD_INFO);
 
-                    if (self.validateBuildKey()) {
-                        self.buildApi.requestBuildOptions(self.cloudBuildKey, getCloudBuildOptions, getBoardInfo);
-                    } else {
-                        getBoardInfo();
-                    }
-                });
-            });
+            // store FC.CONFIG.buildKey as the object gets destroyed after disconnect
+            self.cloudBuildKey = FC.CONFIG.buildKey;
+
+            // 3/21/2024 is the date when the build key was introduced
+            const supportedDate = new Date('3/21/2024');
+            const buildDate = new Date(FC.CONFIG.buildInfo);
+
+            if (self.validateBuildKey() && (semver.lt(FC.CONFIG.apiVersion, API_VERSION_1_46) || buildDate < supportedDate)) {
+                self.buildApi.requestBuildOptions(self.cloudBuildKey, getCloudBuildOptions, getBoardInfo);
+            } else {
+                getBoardInfo();
+            }
         } else {
             getBoardInfo();
         }

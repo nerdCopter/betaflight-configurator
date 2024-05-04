@@ -9,7 +9,7 @@ import FC from '../fc';
 import MSP from '../msp';
 import Model from '../model';
 import MSPCodes from '../msp/MSPCodes';
-import CONFIGURATOR, { API_VERSION_1_42, API_VERSION_1_43, API_VERSION_1_46 } from '../data_storage';
+import CONFIGURATOR, { API_VERSION_1_42, API_VERSION_1_43, API_VERSION_1_45, API_VERSION_1_46 } from '../data_storage';
 import { gui_log } from '../gui_log';
 import $ from 'jquery';
 
@@ -145,12 +145,27 @@ setup.initialize = function (callback) {
                     $('#mag_calib_rest').hide();
                 });
 
-                GUI.timeout_add('button_reset', function () {
+                function magCalibResetButton() {
                     gui_log(i18n.getMessage('initialSetupMagCalibEnded'));
                     _self.removeClass('calibrating');
                     $('#mag_calib_running').hide();
                     $('#mag_calib_rest').show();
-                }, 30000);
+                }
+
+                if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_46)) {
+                    let cycle = 0;
+                    const cycleMax = 45;
+                    const interval = 1000;
+                    const intervalId = setInterval(function () {
+                        if (cycle >= cycleMax || (FC.CONFIG.armingDisableFlags & (1 << 12)) === 0) {
+                            clearInterval(intervalId);
+                            magCalibResetButton();
+                        }
+                        cycle++;
+                    }, interval);
+                } else {
+                    GUI.timeout_add('button_reset', magCalibResetButton, 30000);
+                }
             }
         });
 
@@ -208,7 +223,9 @@ setup.initialize = function (callback) {
             // Firmware info
             msp_api_e = $('.api-version'),
             build_date_e = $('.build-date'),
-            build_info_e = $('.build-info');
+            build_type_e = $('.build-type'),
+            build_info_e = $('.build-info'),
+            build_options_e = $('.build-options');
 
         // DISARM FLAGS
         // We add all the arming/disarming flags available, and show/hide them if needed.
@@ -430,51 +447,61 @@ setup.initialize = function (callback) {
             }
         }
 
-        const showFirmwareInfo = function() {
-            // Firmware info
-            msp_api_e.text([FC.CONFIG.apiVersion]);
-            build_date_e.text([FC.CONFIG.buildInfo]);
+        const showBuildInfo = function() {
+            const supported = FC.CONFIG.buildKey.length === 32;
 
-            if (navigator.onLine) {
-                let buildOptionList = "";
-
-                if (FC.CONFIG.buildOptions.length) {
-                    buildOptionList = `<div class="dialogBuildInfoGrid-container">`;
-                    for (const buildOptionElement of FC.CONFIG.buildOptions) {
-                        buildOptionList += `<div class="dialogBuildInfoGrid-item">${buildOptionElement}</div>`;
-                    }
-                    buildOptionList += `</div>`;
-                    build_info_e.html(`<span class="buildInfoBtn" title="${i18n.getMessage('initialSetupInfoBuildOption')}">
-                        <a class="buildOptions" href=#"><strong>${i18n.getMessage('initialSetupInfoBuildOptionsList')}</strong></a></span>`);
-                } else {
-                    build_info_e.html(i18n.getMessage(navigator.onLine ? 'initialSetupInfoBuildOptionsEmpty' : 'initialSetupNotOnline'));
-                }
-
-                if (FC.CONFIG.buildKey.length === 32) {
-                    const buildRoot   = `https://build.betaflight.com/api/builds/${FC.CONFIG.buildKey}`;
-                    const buildConfig = `<span class="buildInfoBtn" title="${i18n.getMessage('initialSetupInfoBuildConfig')}: ${buildRoot}/json">
-                                         <a href="${buildRoot}/json" target="_blank"><strong>${i18n.getMessage('initialSetupInfoBuildConfig')}</strong></a></span>`;
-
-                    const buildLog =    `<span class="buildInfoBtn" title="${i18n.getMessage('initialSetupInfoBuildLog')}: ${buildRoot}/log">
-                                         <a href="${buildRoot}/log" target="_blank"><strong>${i18n.getMessage('initialSetupInfoBuildLog')}</strong></a></span>`;
-
-                    const buildOptions = `<span class="buildInfoBtn" title="${i18n.getMessage('initialSetupInfoBuildOptionList')}">
-                                         <a class="buildOptions disabled" href=#"><strong>${i18n.getMessage('initialSetupInfoBuildOptions')}</strong></a></span>`;
-
-                    build_info_e.html(`${buildConfig} ${buildLog} &nbsp; &nbsp; ${buildOptions}`);
-                    $('a.buildOptions').on('click', async function() {
-                                                    showDialogBuildInfo(`<h3>${i18n.getMessage('initialSetupInfoBuildOptionList')}</h3>`, buildOptionList);
-                                                    });
-                    $('.build-info a').removeClass('disabled');
-                } else {
-                    build_info_e.html(i18n.getMessage('initialSetupInfoBuildEmpty'));
-                    $('.build-info a').addClass('disabled');
-                }
+            if (supported && navigator.onLine) {
+                const buildRoot   = `https://build.betaflight.com/api/builds/${FC.CONFIG.buildKey}`;
+                const buildConfig = `<span class="buildInfoBtn" title="${i18n.getMessage('initialSetupInfoBuildConfig')}: ${buildRoot}/json">
+                                    <a href="${buildRoot}/json" target="_blank"><strong>${i18n.getMessage('initialSetupInfoBuildConfig')}</strong></a></span>`;
+                const buildLog =    `<span class="buildInfoBtn" title="${i18n.getMessage('initialSetupInfoBuildLog')}: ${buildRoot}/log">
+                                    <a href="${buildRoot}/log" target="_blank"><strong>${i18n.getMessage('initialSetupInfoBuildLog')}</strong></a></span>`;
+                build_info_e.html(`<span class="buildInfoBtn" title="${i18n.getMessage('initialSetupInfoBuildOptions')}">
+                    <a class="buildOptions" href=#"><strong>${i18n.getMessage('initialSetupInfoBuildOptionList')}</strong></a></span>`);
+                build_info_e.html(`${buildConfig} ${buildLog}`);
             } else {
-                build_info_e.html(i18n.getMessage('initialSetupNotOnline'));
-                $('.build-info a').addClass('disabled');
+                build_info_e.html(supported ? i18n.getMessage('initialSetupNotOnline') : i18n.getMessage('initialSetupNoBuildInfo'));
             }
         };
+
+        const showBuildOptions = function() {
+            const supported = (semver.eq(FC.CONFIG.apiVersion, API_VERSION_1_45) && navigator.onLine || semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_46)) && FC.CONFIG.buildOptions.length;
+
+            if (supported) {
+                let buildOptionList = `<div class="dialogBuildInfoGrid-container">`;
+                for (const buildOptionElement of FC.CONFIG.buildOptions) {
+                    buildOptionList += `<div class="dialogBuildInfoGrid-item">${buildOptionElement}</div>`;
+                }
+                buildOptionList += `</div>`;
+
+                build_options_e.html(`<span class="buildInfoBtn" title="${i18n.getMessage('initialSetupInfoBuildOptions')}">
+                    <a class="buildOptions" href=#"><strong>${i18n.getMessage('initialSetupInfoBuildOptionList')}</strong></a></span>`);
+
+                const buildOptions = `<span class="buildInfoBtn" title="${i18n.getMessage('initialSetupInfoBuildOptionList')}">
+                                      <a class="buildOptions" href=#"><strong>${i18n.getMessage('initialSetupInfoBuildOptions')}</strong></a></span>`;
+
+                build_options_e.html(buildOptions);
+
+                $('a.buildOptions').on('click', async function() {
+                    showDialogBuildInfo(`<h3>${i18n.getMessage('initialSetupInfoBuildOptionList')}</h3>`, buildOptionList);
+                });
+            } else {
+                // should not happen, but just in case
+                build_options_e.html(`${i18n.getMessage('initialSetupNoBuildInfo')}`);
+            }
+        };
+
+        function showFirmwareInfo() {
+            // Firmware info
+            msp_api_e.text(FC.CONFIG.apiVersion);
+            build_date_e.text(FC.CONFIG.buildInfo);
+
+            if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_45)) {
+                build_type_e.html(FC.CONFIG.buildKey.length === 32 ? i18n.getMessage("initialSetupInfoBuildCloud") : i18n.getMessage("initialSetupInfoBuildLocal"));
+                showBuildInfo();
+                showBuildOptions();
+            }
+        }
 
         prepareDisarmFlags();
         showSensorInfo();

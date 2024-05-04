@@ -118,7 +118,7 @@ pid_tuning.initialize = function (callback) {
         if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_45)) {
             // Moved tpa to profile
             $('select[id="tpaMode"]').val(FC.ADVANCED_TUNING.tpaMode);
-            $('input[id="tpaRate"]').val(FC.ADVANCED_TUNING.tpaRate.toFixed(2));
+            $('input[id="tpaRate"]').val(FC.ADVANCED_TUNING.tpaRate * 100);
             $('input[id="tpaBreakpoint"]').val(FC.ADVANCED_TUNING.tpaBreakpoint);
         } else {
             $('.tpa-old input[name="tpa"]').val(FC.RC_TUNING.dynamic_THR_PID.toFixed(2));
@@ -1108,7 +1108,7 @@ pid_tuning.initialize = function (callback) {
 
         if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_45)) {
             FC.ADVANCED_TUNING.tpaMode = $('select[id="tpaMode"]').val();
-            FC.ADVANCED_TUNING.tpaRate = parseFloat($('input[id="tpaRate"]').val());
+            FC.ADVANCED_TUNING.tpaRate = parseInt($('input[id="tpaRate"]').val()) / 100;
             FC.ADVANCED_TUNING.tpaBreakpoint = parseInt($('input[id="tpaBreakpoint"]').val());
         } else {
             FC.RC_TUNING.dynamic_THR_PID = parseFloat($('.tpa-old input[name="tpa"]').val());
@@ -1560,17 +1560,21 @@ pid_tuning.initialize = function (callback) {
                 console.debug(`Invalid subtab name: "${subtabName}"`);
                 return;
             }
-            for (name of names) {
-                const el = $(`.tab-pid_tuning .subtab-${name}`);
-                el[name == subtabName ? 'show' : 'hide']();
+            for (const tabname of names) {
+                const el = $(`.tab-pid_tuning .subtab-${tabname}`);
+                el[tabname === subtabName ? 'show' : 'hide']();
             }
             $('.tab-pid_tuning .tab-container .tab').removeClass('active');
             $(`.tab-pid_tuning .tab-container .${subtabName}`).addClass('active');
             self.activeSubtab = subtabName;
-            if (subtabName == 'rates') {
+            if (subtabName === 'rates') {
                 // force drawing of throttle curve once the throttle curve container element is available
                 // deferring drawing like this is needed to acquire the exact pixel size of the canvas
                 redrawThrottleCurve(true);
+                self.throttleDrawInterval = setInterval(redrawThrottleCurve, 100);
+            } else if (self.throttleDrawInterval) {
+                clearInterval(self.throttleDrawInterval);
+                self.throttleDrawInterval = null;
             }
         }
 
@@ -1689,8 +1693,8 @@ pid_tuning.initialize = function (callback) {
 
         $('.pid_tuning').on('input change', updateRates).trigger('input');
 
-        function redrawThrottleCurve(forced) {
-            if (!forced && !TABS.pid_tuning.checkThrottle()) {
+        function redrawThrottleCurve(forced = false) {
+            if (!forced && !self.checkThrottle()) {
                 return;
             }
 
@@ -1711,13 +1715,33 @@ pid_tuning.initialize = function (callback) {
                 };
             }
 
-            /* --- */
+            /*
+            Maths from: https://stackoverflow.com/questions/40918569/quadratic-bezier-curve-calculate-x-for-any-given-y
+            */
+            function getPosfromYBezier(y, startY, cpY, endY) {
+            // y = (1-t)^2 * p0 + 2 * (1-t)*t*p1 + t^2 * p2
+            // y = (p2+p0-2p1)x^2 + 2(p1 - p0)x + p0
+            // 0 = (p2+p0-2p1)x^2 + 2(p1 - p0)x + (p0 - y)
+                const a = startY + endY - 2 * cpY;
+                const b = 2 * (cpY - startY);
+                const c = startY - y;
+                return a == 0 ? -c / b : ( -b - Math.sqrt(Math.pow(b, 2) - 4 * a * c)) / (2 * a);
+            }
 
+            const THROTTLE_LIMIT_TYPES = {
+                OFF: 0,
+                SCALE: 1,
+                CLIP: 2,
+            };
             // let global validation trigger and adjust the values first
             const throttleMidE = $('.throttle input[name="mid"]');
             const throttleExpoE = $('.throttle input[name="expo"]');
+            const throttleLimitPercentE = $('.throttle_limit input[name="throttleLimitPercent"]');
+            const throttleLimitTypeE = $('.throttle_limit select[id="throttleLimitType"]');
             const mid = parseFloat(throttleMidE.val());
             const expo = parseFloat(throttleExpoE.val());
+            const throttleLimitPercent = parseInt(throttleLimitPercentE.val()) / 100;
+            const throttleLimitType = parseInt(throttleLimitTypeE.val());
             const throttleCurve = $('.throttle .throttle_curve canvas').get(0);
             const context = throttleCurve.getContext("2d");
 
@@ -1734,29 +1758,52 @@ pid_tuning.initialize = function (callback) {
             throttleCurve.width = throttleCurve.height *
                 (throttleCurve.clientWidth / throttleCurve.clientHeight);
 
+            const throttleScale = throttleLimitType === THROTTLE_LIMIT_TYPES.SCALE ? throttleLimitPercent : 1;
             const canvasHeight = throttleCurve.height;
             const canvasWidth = throttleCurve.width;
 
             // math magic by englishman
-            const midx = canvasWidth * mid;
-            const midxl = midx * 0.5;
-            const midxr = (((canvasWidth - midx) * 0.5) + midx);
-            const midy = canvasHeight - (midx * (canvasHeight / canvasWidth));
-            const midyl = canvasHeight - ((canvasHeight - midy) * 0.5 *(expo + 1));
-            const midyr = (midy / 2) * (expo + 1);
+            const topY = canvasHeight * (1 - throttleScale);
+            const midX = canvasWidth * mid;
+            const midXl = midX * 0.5;
+            const midXr = (((canvasWidth - midX) * 0.5) + midX);
+            const midY = (canvasHeight - throttleScale * (midX * (canvasHeight / canvasWidth)));
+            const midYl = (canvasHeight - ((canvasHeight - midY) * 0.5 * (expo + 1)));
+            const midYr = (topY + ((midY - topY) * 0.5 *(expo + 1)));
 
             let thrPercent = (FC.RC.channels[3] - 1000) / 1000,
                 thrpos = thrPercent <= mid
-                    ? getQuadraticCurvePoint(0, canvasHeight, midxl, midyl, midx, midy, thrPercent * (1.0 / mid))
-                    : getQuadraticCurvePoint(midx, midy, midxr, midyr, canvasWidth, 0, (thrPercent - mid) * (1.0 / (1.0 - mid)));
+                    ? getQuadraticCurvePoint(0, canvasHeight, midXl, midYl, midX, midY, thrPercent * (1.0 / mid))
+                    : getQuadraticCurvePoint(midX, midY, midXr, midYr, canvasWidth, topY, (thrPercent - mid) * (1.0 / (1.0 - mid)));
 
             // draw
             context.clearRect(0, 0, canvasWidth, canvasHeight);
             context.beginPath();
             context.moveTo(0, canvasHeight);
-            context.quadraticCurveTo(midxl, midyl, midx, midy);
-            context.moveTo(midx, midy);
-            context.quadraticCurveTo(midxr, midyr, canvasWidth, 0);
+            if (throttleLimitType === THROTTLE_LIMIT_TYPES.CLIP) {
+                const throttleClipY = canvasHeight * (1 - throttleLimitPercent);
+                thrpos.y = thrpos.y < throttleClipY ? throttleClipY : thrpos.y;
+                const clipPos = throttleLimitPercent <= mid
+                    ? getPosfromYBezier(throttleClipY,canvasHeight,midYl, midY)
+                    : getPosfromYBezier(throttleClipY,midY, midYr, topY);
+                let curveClip = getQuadraticCurvePoint(0, canvasHeight, midXl, midYl, midX, midY, clipPos);
+                let ctrlX = curveClip.x / 2;
+                let ctrlY = midYl + (canvasHeight - midYl) * (midX - curveClip.x) / midX;
+                if (throttleLimitPercent > mid) {
+                    context.quadraticCurveTo(midXl, midYl, midX, midY);
+                    context.moveTo(midX, midY);
+                    curveClip = getQuadraticCurvePoint(midX, midY, midXr, midYr, canvasWidth, topY, clipPos);
+                    ctrlX = midX + (curveClip.x - midX) / 2;
+                    ctrlY = midYr + (midY - midYr) * (canvasWidth - curveClip.x) / (canvasWidth - midX);
+                }
+                context.quadraticCurveTo(ctrlX, ctrlY, curveClip.x, curveClip.y);
+                context.moveTo(curveClip.x, curveClip.y);
+                context.lineTo(canvasWidth, curveClip.y);
+            } else {
+                context.quadraticCurveTo(midXl, midYl, midX, midY);
+                context.moveTo(midX, midY);
+                context.quadraticCurveTo(midXr, midYr, canvasWidth, topY);
+            }
             context.lineWidth = 2;
             context.strokeStyle = '#ffbb00';
             context.stroke();
@@ -1778,10 +1825,8 @@ pid_tuning.initialize = function (callback) {
             context.restore();
         }
 
-        $('.throttle input')
-            .on('input change', () => setTimeout(() => redrawThrottleCurve(true), 0));
-
-        TABS.pid_tuning.throttleDrawInterval = setInterval(redrawThrottleCurve, 100);
+        $('.throttle input, .throttle_limit input, .throttle_limit select')
+            .on('change', () => setTimeout(() => redrawThrottleCurve(true), 0));
 
         $('a.refresh').click(function () {
             self.refresh(function () {
@@ -2301,7 +2346,10 @@ pid_tuning.initRatesPreview = function () {
 };
 
 pid_tuning.renderModel = function () {
-    if (this.keepRendering) { requestAnimationFrame(this.renderModel.bind(this)); }
+    if (!this.keepRendering) {
+        return;
+    }
+    requestAnimationFrame(this.renderModel.bind(this));
 
     if (!this.clock) { this.clock = new THREE.Clock(); }
 
@@ -2346,6 +2394,8 @@ pid_tuning.renderModel = function () {
 pid_tuning.cleanup = function (callback) {
     const self = this;
 
+    self.keepRendering = false;
+
     if (self.model) {
         $(window).off('resize', $.proxy(self.model.resize, self.model));
         self.model.dispose();
@@ -2353,9 +2403,9 @@ pid_tuning.cleanup = function (callback) {
 
     $(window).off('resize', $.proxy(this.updateRatesLabels, this));
 
-
-    self.keepRendering = false;
-    clearInterval(TABS.pid_tuning.throttleDrawInterval);
+    if (self.throttleDrawInterval) {
+        clearInterval(self.throttleDrawInterval);
+    }
 
     if (callback) callback();
 };
@@ -2646,6 +2696,65 @@ pid_tuning.updateRatesLabels = function() {
                     {value: parseInt(currentValues[2]), balloon: function() {drawBalloonLabel(stickContext, currentValues[2], 10, 350, 'none', BALLOON_COLORS.yaw, balloonsDirty);}},
                 );
             }
+
+            // Add labels for angleCenterSensitivity
+
+            const angleLimit = FC.ADVANCED_TUNING.levelAngleLimit;
+            const maxAngleRollRate = parseInt(maxAngularVelRoll);
+            const maxAnglePitchRate = parseInt(maxAngularVelPitch);
+            const rcRate = self.currentRates.rc_rate;
+            const rcRatePitch = self.currentRates.rc_rate_pitch;
+
+            function getOffsetForBalloon(value) {
+                return curveWidth - (Math.ceil(stickContext.measureText(value).width) / (stickContext.canvas.clientWidth / stickContext.canvas.clientHeight)) - 40;
+            }
+
+            const angleModeText = `Angle Mode`;
+
+            if (self.currentRatesType === FC.RATES_TYPE.ACTUAL) {
+                drawAxisLabel(stickContext, angleModeText, (curveWidth - 10) / textScale, curveHeight - 250, 'right');
+
+                const angleCenterSensitivityRoll = (rcRate / maxAngleRollRate * angleLimit).toFixed(1);
+                const angleCenterSensitivityPitch = (rcRatePitch / maxAnglePitchRate * angleLimit).toFixed(1);
+
+                const angleCenterSensitivityRollText = `${angleCenterSensitivityRoll}...${angleLimit}`;
+                const angleCenterSensitivityPitchText = `${angleCenterSensitivityPitch}...${angleLimit}`;
+
+                const angleCenterSensitivityRollOffset = getOffsetForBalloon(angleCenterSensitivityRollText);
+                const angleCenterSensitivityPitchOffset = getOffsetForBalloon(angleCenterSensitivityPitchText);
+
+                balloons.push(
+                    {value: parseInt(angleCenterSensitivityRoll), balloon: function() {drawBalloonLabel(stickContext, angleCenterSensitivityRollText, angleCenterSensitivityRollOffset, curveHeight - 150, 'none', BALLOON_COLORS.roll, balloonsDirty);}},
+                    {value: parseInt(angleCenterSensitivityPitch), balloon: function() {drawBalloonLabel(stickContext, angleCenterSensitivityPitchText, angleCenterSensitivityPitchOffset, curveHeight - 50, 'none', BALLOON_COLORS.pitch, balloonsDirty);}},
+                );
+            }
+
+            if (self.currentRatesType === FC.RATES_TYPE.BETAFLIGHT) {
+                drawAxisLabel(stickContext, angleModeText, (curveWidth - 10) / textScale, curveHeight - 250, 'right');
+
+                const RC_RATE_INCREMENTAL = 14.54;
+
+                // ROLL
+                const expo = self.currentRates.rc_expo;
+                const rcRateModified = rcRate > 2.0 ? (rcRate - 2.0) * RC_RATE_INCREMENTAL + 2.0: rcRate;
+                const sensitivityFractionRoll = (angleLimit * ((1 - expo) * rcRateModified * 200 / maxAngleRollRate)).toFixed(1);
+
+                const sensitivityFractionRollText = `${sensitivityFractionRoll}...${angleLimit}`;
+                const sensitivityFractionRollOffset = getOffsetForBalloon(sensitivityFractionRollText);
+                // PITCH
+                const expoPitch = self.currentRates.rc_pitch_expo;
+                const rcRateModifiedPitch = rcRatePitch > 2.0 ? (rcRatePitch - 2.0) * RC_RATE_INCREMENTAL + 2.0: rcRatePitch;
+                const sensitivityFractionPitch = (angleLimit * ((1 - expoPitch) * rcRateModifiedPitch * 200 / maxAnglePitchRate)).toFixed(1);
+
+                const sensitivityFractionPitchText = `${sensitivityFractionPitch}...${angleLimit}`;
+                const sensitivityFractionPitchOffset = getOffsetForBalloon(sensitivityFractionPitchText);
+
+                balloons.push(
+                    {value: parseInt(sensitivityFractionRoll), balloon: function() {drawBalloonLabel(stickContext, sensitivityFractionRollText, sensitivityFractionRollOffset, curveHeight - 150, 'none', BALLOON_COLORS.roll, balloonsDirty);}},
+                    {value: parseInt(sensitivityFractionPitch), balloon: function() {drawBalloonLabel(stickContext, sensitivityFractionPitchText, sensitivityFractionPitchOffset, curveHeight - 50, 'none', BALLOON_COLORS.pitch, balloonsDirty);}},
+                );
+            }
+
             // then display them on the chart
             for (const balloon of balloons) {
                 balloon.balloon();

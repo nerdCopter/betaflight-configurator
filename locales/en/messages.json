@@ -1119,6 +1119,18 @@
     "initialSetupInfoBuildEmpty": {
         "message": "Local Build - no Cloud information"
     },
+    "initialSetupInfoBuildType": {
+        "message": "Build type"
+    },
+    "initialSetupInfoBuildLocal": {
+        "message": "Local Build"
+    },
+    "initialSetupInfoBuildCloud": {
+        "message": "Cloud Build"
+    },
+    "initialSetupNoBuildInfo": {
+        "message": "No build information available"
+    },
     "initialSetupNotOnline": {
         "message": "Server unavailable"
     },
@@ -2065,10 +2077,10 @@
         "message": "TPA"
     },
     "pidTuningTPARate": {
-        "message": "TPA Rate"
+        "message": "TPA Rate (%)"
     },
     "pidTuningTPABreakPoint": {
-        "message": "TPA Breakpoint"
+        "message": "TPA Breakpoint (μs)"
     },
     "pidTuningTPAPD": {
         "message": "PD"
@@ -2190,7 +2202,7 @@
         "message": "<strong>Pid Tuning Slider Mode</strong><br><br>Pidtuning slider mode can be:<br><br>&bull; OFF - no sliders, enter values manually<br>&bull; RP - sliders control Roll and Pitch only, enter Yaw values manually<br>&bull; RPY - sliders control all PID values<br><br><span class=\"message-negative\"><b>Warning:</b></span>Going from RP to RPY mode will overwrite Yaw settings with firmware settings."
     },
     "receiverHelp": {
-        "message": "&#8226;  <b><strong><a href=\"https://betaflight.com/docs/development/Failsafe#testing-failsafe\" target=\"_blank\" rel=\"noopener noreferrer\">Always check that your Failsafe is working properly!</a></strong></b> The settings are in the Failsafe tab, which requires Expert Mode.<br> &#8226; <b>Use the latest Tx firmware!</b><br> &#8226; <strong><a href=\"https://betaflight.com/docs/development/Rx#disabling-the-opentxedgetx-adc-filter\" target=\"_blank\" rel=\"noopener noreferrer\">Disable the hardware ADC filter</a></strong> in the Transmitter if using OpenTx or EdgeTx.<br>Basic Setup: Configure the 'Receiver' settings correctly. Choose the correct ‘Channel Map’ for your radio. Check that the Roll, Pitch and other bar graphs move correctly. Adjust the channel endpoint or range values in the transmitter to ~1000 to ~2000, and set the midpoint to 1500. For more information, read the <strong><a href=\"https://betaflight.com/docs/development/Rx\" target=\"_blank\" rel=\"noopener noreferrer\">documentation</a></strong>."
+        "message": "&#8226;  <b><strong><a href=\"https://betaflight.com/docs/wiki/guides/current/Failsafe#testing-failsafe\" target=\"_blank\" rel=\"noopener noreferrer\">Always check that your Failsafe is working properly!</a></strong></b> The settings are in the Failsafe tab, which requires Expert Mode.<br> &#8226; <b>Use the latest Tx firmware!</b><br> &#8226; <strong><a href=\"https://betaflight.com/docs/development/Rx#disabling-the-opentxedgetx-adc-filter\" target=\"_blank\" rel=\"noopener noreferrer\">Disable the hardware ADC filter</a></strong> in the Transmitter if using OpenTx or EdgeTx.<br>Basic Setup: Configure the 'Receiver' settings correctly. Choose the correct ‘Channel Map’ for your radio. Check that the Roll, Pitch and other bar graphs move correctly. Adjust the channel endpoint or range values in the transmitter to ~1000 to ~2000, and set the midpoint to 1500. For more information, read the <strong><a href=\"https://betaflight.com/docs/development/Rx\" target=\"_blank\" rel=\"noopener noreferrer\">documentation</a></strong>."
     },
     "receiverThrottleMid": {
         "message": "Throttle MID"
@@ -2839,6 +2851,9 @@
     "gpsDistToHome": {
         "message": "Dist to Home:"
     },
+    "gpsPositionalDop": {
+        "message": "Positional DOP:"
+    },
     "gpsSignalStrHead": {
         "message": "GPS Signal Strength"
     },
@@ -2848,6 +2863,9 @@
     },
     "gpsSignalStr": {
         "message": "Signal Strength"
+    },
+    "gpsSignalLost": {
+        "message": "The GPS icon lights up only when the connection to the GPS module is confirmed.<br /><br />It will be red at first, changing to yellow when the 3D fix is attained.<br /><br />If the GPS icon does not light up, check your wiring and configuration, and confirm that the GPS module is receiving power.<br /><br />The CLI 'status' command provides more information about the state of the GPS connection."
     },
     "gpsSignalGnssId": {
         "message": "Gnss ID"
@@ -3476,7 +3494,7 @@
         "message": "Flash on connect"
     },
     "firmwareFlasherFlashOnConnectDescription": {
-        "message": "Attempt to flash the board automatically (triggered by newly detected serial port)."
+        "message": "Attempt to flash the board automatically (triggered by newly detected serial port).<br /><br /><span class=\"message-negative\">WARNING</span>: this function disables the auto-detect and backup feature."
     },
     "firmwareFlasherFullChipErase": {
         "message": "Full chip erase"

@@ -24,11 +24,10 @@ import CryptoES from "crypto-es";
 import $ from 'jquery';
 import BuildApi from "./BuildApi";
 
-import serialNWJS from "./serial.js";
-import serialWeb from "./webSerial.js";
 import { isWeb } from "./utils/isWeb";
+import { serialShim } from "./serial_shim.js";
 
-const serial = isWeb() ? serialWeb : serialNWJS;
+let serial = serialShim();
 
 let mspHelper;
 let connectionTimestamp;
@@ -51,21 +50,25 @@ function disconnectHandler(event) {
 
 export function initializeSerialBackend() {
     GUI.updateManualPortVisibility = function() {
-        const selected_port = $('div#port-picker #port option:selected');
-        if (selected_port.data().isManual) {
+        if(isWeb()) {
+            return;
+        }
+        const selected_port = $('#port').val();
+
+        if (selected_port === 'manual') {
             $('#port-override-option').show();
         }
         else {
             $('#port-override-option').hide();
         }
-        if (selected_port.data().isVirtual) {
+        if (selected_port === 'virtual') {
             $('#firmware-virtual-option').show();
         }
         else {
             $('#firmware-virtual-option').hide();
         }
 
-        $('#auto-connect-and-baud').toggle(!selected_port.data().isDFU);
+        $('#auto-connect-and-baud').toggle(selected_port !== 'DFU');
     };
 
     GUI.updateManualPortVisibility();
@@ -86,9 +89,9 @@ export function initializeSerialBackend() {
 
     $("div.connect_controls a.connect").on('click', function () {
 
-        const selectedPort = $('div#port-picker #port option:selected');
+        const selectedPort = $('#port').val();
         let portName;
-        if (selectedPort.data().isManual) {
+        if (selectedPort === 'manual') {
             portName = $('#port-override').val();
         } else {
             portName = String($('div#port-picker #port').val());
@@ -100,9 +103,9 @@ export function initializeSerialBackend() {
             GUI.configuration_loaded = false;
 
             const selected_baud = parseInt($('div#port-picker #baud').val());
-            const selectedPort = $('div#port-picker #port option:selected');
+            const selectedPort = $('#port').val();
 
-            if (selectedPort.data().isDFU) {
+            if (selectedPort === 'DFU') {
                 $('select#baud').hide();
             } else if (portName !== '0') {
                 if (!isConnected) {
@@ -113,13 +116,17 @@ export function initializeSerialBackend() {
                     $('div#port-picker #port, div#port-picker #baud, div#port-picker #delay').prop('disabled', true);
                     $('div.connect_controls div.connect_state').text(i18n.getMessage('connecting'));
 
-                    const baudRate = parseInt($('div#port-picker #baud').val());
-                    if (selectedPort.data().isVirtual) {
+                    const baudRate = parseInt($('#baud').val());
+                    if (selectedPort === 'virtual') {
                         CONFIGURATOR.virtualMode = true;
-                        CONFIGURATOR.virtualApiVersion = $('#firmware-version-dropdown :selected').val();
+                        CONFIGURATOR.virtualApiVersion = $('#firmware-version-dropdown').val();
 
+                        // Hack to get virtual working on the web
+                        serial = serialShim();
                         serial.connect('virtual', {}, onOpenVirtual);
                     } else if (isWeb()) {
+                        CONFIGURATOR.virtualMode = false;
+                        serial = serialShim();
                         // Explicitly disconnect the event listeners before attaching the new ones.
                         serial.removeEventListener('connect', connectHandler);
                         serial.addEventListener('connect', connectHandler);
@@ -150,7 +157,7 @@ export function initializeSerialBackend() {
                         finishClose(toggleStatus);
                     }
 
-                    mspHelper.setArmingEnabled(true, false, onFinishCallback);
+                    mspHelper?.setArmingEnabled(true, false, onFinishCallback);
                 }
             }
         }
@@ -352,6 +359,11 @@ function onOpen(openInfo) {
 
                                 gui_log(i18n.getMessage('buildInfoReceived', [FC.CONFIG.buildInfo]));
 
+                                // retrieve build options from the flight controller
+                                if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_46)) {
+                                    FC.processBuildOptions();
+                                }
+
                                 MSP.send_message(MSPCodes.MSP_BOARD_INFO, false, false, processBoardInfo);
                             });
                         });
@@ -489,7 +501,7 @@ function checkReportProblems() {
         let problems = [];
         let abort = false;
 
-        if (semver.gt(FC.CONFIG.apiVersion, CONFIGURATOR.API_VERSION_MAX_SUPPORTED)) {
+        if (semver.minor(FC.CONFIG.apiVersion) > semver.minor(CONFIGURATOR.API_VERSION_MAX_SUPPORTED)) {
             const problemName = 'API_VERSION_MAX_SUPPORTED';
             problems.push({ name: problemName, description: i18n.getMessage(`reportProblemsDialog${problemName}`,
                 [CONFIGURATOR.latestVersion, CONFIGURATOR.latestVersionReleaseUrl, CONFIGURATOR.getDisplayVersion(), FC.CONFIG.flightControllerVersion])});
@@ -534,22 +546,35 @@ function checkReportProblems() {
     });
 }
 
-async function processBuildConfiguration() {
-    const buildApi = new BuildApi();
+async function processBuildOptions() {
+    const supported = semver.eq(FC.CONFIG.apiVersion, API_VERSION_1_45);
 
-    function onLoadCloudBuild(options) {
-        FC.CONFIG.buildOptions = options.Request.Options;
-        processCraftName();
-    }
+    // firmware 1_45 or higher is required to support cloud build options
+    // firmware 1_46 or higher retrieves build options from the flight controller
+    if (supported && FC.CONFIG.buildKey.length === 32 && navigator.onLine) {
+        const buildApi = new BuildApi();
 
-    await MSP.promise(MSPCodes.MSP2_GET_TEXT, mspHelper.crunch(MSPCodes.MSP2_GET_TEXT, MSPCodes.BUILD_KEY));
+        function onLoadCloudBuild(options) {
+            FC.CONFIG.buildOptions = options.Request.Options;
+            processCraftName();
+        }
 
-    if (FC.CONFIG.buildKey.length === 32 && navigator.onLine) {
-        gui_log(i18n.getMessage('buildKey', FC.CONFIG.buildKey));
         buildApi.requestBuildOptions(FC.CONFIG.buildKey, onLoadCloudBuild, processCraftName);
     } else {
         processCraftName();
     }
+}
+
+async function processBuildConfiguration() {
+    const supported = semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_45);
+
+    if (supported) {
+        // get build key from firmware
+        await MSP.promise(MSPCodes.MSP2_GET_TEXT, mspHelper.crunch(MSPCodes.MSP2_GET_TEXT, MSPCodes.BUILD_KEY));
+        gui_log(i18n.getMessage('buildKey', FC.CONFIG.buildKey));
+    }
+
+    processBuildOptions();
 }
 
 async function processUid() {
@@ -559,11 +584,7 @@ async function processUid() {
 
     gui_log(i18n.getMessage('uniqueDeviceIdReceived', FC.CONFIG.deviceIdentifier));
 
-    if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_45)) {
-        processBuildConfiguration();
-    } else {
-        processCraftName();
-    }
+    processBuildConfiguration();
 
     tracking.sendEvent(tracking.EVENT_CATEGORIES.FLIGHT_CONTROLLER, 'Connected', {
         deviceIdentifier: CryptoES.SHA1(FC.CONFIG.deviceIdentifier),
