@@ -1401,7 +1401,7 @@
         "message": "Disarm motors after set delay [seconds] (Requires MOTOR_STOP feature)"
     },
     "configurationGyroCalOnFirstArm": {
-        "message": "Calibrate Gyro on first arm"
+        "message": "Calibrate the gyro right before the first arm"
     },
     "configurationDigitalIdlePercent": {
         "message": "Motor Idle ( %, static)"
