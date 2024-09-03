@@ -1,15 +1,24 @@
 // https://stackoverflow.com/a/78933347/2013805
+// https://github.com/bintray/gradle-bintray-plugin/issues/346#issuecomment-2316791348
 
 buildscript {
     repositories {
-        maven { url "https://repo.grails.org/grails/core/" }
-        ...
+        google()
+        mavenCentral()
+        gradlePluginPortal()
     }
-}
+    dependencies {
+        classpath('com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3') {
+            exclude group: 'org.codehaus.groovy.modules.http-builder', module: 'http-builder'
+        }
+    }
 
+/*
 allprojects {
     repositories {
         maven { url "https://repo.grails.org/grails/core/" }
         ...
     }
+*/
+
 }
