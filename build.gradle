@@ -1,0 +1,17 @@
+// https://github.com/bintray/gradle-bintray-plugin/issues/346#issuecomment-2316791348
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+        jcenter()
+    }
+    dependencies {
+        classpath('com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3') {
+            exclude group: 'org.codehaus.groovy.modules.http-builder', module: 'http-builder'
+        }
+    }
+
+
+}
