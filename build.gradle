@@ -1,4 +1,5 @@
 // https://github.com/bintray/gradle-bintray-plugin/issues/346#issuecomment-2316791348
+// https://github.com/forcedotcom/SalesforceMobileSDK-Android/issues/1402#issuecomment-666322493
 
 buildscript {
     repositories {
@@ -8,10 +9,9 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath('com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3') {
-            exclude group: 'org.codehaus.groovy.modules.http-builder', module: 'http-builder'
-        }
+     dependencies {
+         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
+         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
+     }
     }
-
-
 }
