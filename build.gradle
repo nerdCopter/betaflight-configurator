@@ -1,0 +1,15 @@
+// https://stackoverflow.com/a/78933347/2013805
+
+buildscript {
+    repositories {
+        maven { url "https://repo.grails.org/grails/core/" }
+        ...
+    }
+}
+
+allprojects {
+    repositories {
+        maven { url "https://repo.grails.org/grails/core/" }
+        ...
+    }
+}
