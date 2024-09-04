@@ -25,6 +25,8 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        gradlePluginPortal()
+        jcenter()
     }
 }
 
