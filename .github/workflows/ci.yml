@@ -113,6 +113,7 @@ jobs:
           curl -L -O https://plugins.gradle.org/m2/com/jfrog/bintray/com.jfrog.bintray.gradle.plugin/1.7.3/com.jfrog.bintray.gradle.plugin-1.7.3.pom
           curl -L -O https://plugins.gradle.org/m2/com/jfrog/bintray/gradle/gradle-bintray-plugin/1.7.3/gradle-bintray-plugin-1.7.3.jar
           cd -
+        continue-on-error: true
 
       - run: yarn gulp debug-release ${{ matrix.releaseArgs }}
         if: ${{ inputs.debug_build || matrix.name == 'Android' }}
