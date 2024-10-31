@@ -5553,6 +5553,11 @@ copy-props@^2.0.1:
     each-props "^1.3.2"
     is-plain-object "^5.0.0"
 
+cordova-app-hello-world@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/cordova-app-hello-world/-/cordova-app-hello-world-6.0.0.tgz#aed3e3334516c1c0717b942ce85bea4f8a57f71a"
+  integrity sha512-wPZsm+fzNUwdiTRODT+fQuPV410RNmd3Buiw63vT8BPxjC+cn6Bu8emrgwrDM4pbmU5sa5Unwu3xPcbQGQ3G3g==
+
 cordova-common@^5.0.0:
   version "5.0.0"
   resolved "https://registry.yarnpkg.com/cordova-common/-/cordova-common-5.0.0.tgz#88fc5113c2656c08e1f179d398ad68c71c0ccd63"
@@ -5575,6 +5580,23 @@ cordova-common@^5.0.0:
     q "^1.5.1"
     read-chunk "^3.2.0"
     strip-bom "^4.0.0"
+
+cordova-create@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/cordova-create/-/cordova-create-5.0.0.tgz#88fe33058cf2d46d86efbe936a4ba2c4d6db8a05"
+  integrity sha512-jFc+vbh6Xx2DciI0/RFzLOB0X7YOiiDv9kjDfoq+jqh+TRZDYOuES19F1ZkwgDTJGnwUO0HoMIswiiTy45Royw==
+  dependencies:
+    cordova-app-hello-world "^6.0.0"
+    cordova-common "^5.0.0"
+    cordova-fetch "^4.0.0"
+    fs-extra "^11.1.1"
+    globby "^11.1.0"
+    import-fresh "^3.3.0"
+    isobject "^4.0.0"
+    npm-package-arg "^10.1.0"
+    path-is-inside "^1.0.2"
+    tmp "^0.2.1"
+    valid-identifier "0.0.2"
 
 cordova-fetch@^4.0.0:
   version "4.0.0"
@@ -9230,7 +9252,7 @@ immutable@^4.0.0:
   resolved "https://registry.yarnpkg.com/immutable/-/immutable-4.3.5.tgz#f8b436e66d59f99760dc577f5c99a4fd2a5cc5a0"
   integrity sha512-8eabxkth9gZatlwl5TBuJnCsoTADlL6ftEr7A4qgdaTsPyreilDSnUk57SO+jfKcNtxPa22U5KK6DSeAYhpBJw==
 
-import-fresh@^3.1.0, import-fresh@^3.2.1:
+import-fresh@^3.1.0, import-fresh@^3.2.1, import-fresh@^3.3.0:
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/import-fresh/-/import-fresh-3.3.0.tgz#37162c25fcb9ebaa2e6e53d5b4d88ce17d9e0c2b"
   integrity sha512-veYYhQa+D1QBKznvhUHxb8faxlrwUnxseDAbAp457E0wLNio2bOSKnjYDhMj+YiAq61xrMGhQk9iXVk5FzgQMw==
@@ -12610,6 +12632,11 @@ path-is-absolute@^1.0.0:
   resolved "https://registry.yarnpkg.com/path-is-absolute/-/path-is-absolute-1.0.1.tgz#174b9268735534ffbc7ace6bf53a5a9e1b5c5f5f"
   integrity sha512-AVbw3UJ2e9bq64vSaS9Am0fje1Pa8pbGqTTsmXfaIiMpnr5DlDhfJOuLj9Sf95ZPVDAUerDfEk88MPmPe7UCQg==
 
+path-is-inside@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/path-is-inside/-/path-is-inside-1.0.2.tgz#365417dede44430d1c11af61027facf074bdfc53"
+  integrity sha512-DUWJr3+ULp4zXmol/SZkFf3JGsS9/SIv+Y3Rt93/UjPpDpklB5f1er4O3POIbUuUJ3FXgqte2Q7SrU6zAqwk8w==
+
 path-key@^2.0.0, path-key@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/path-key/-/path-key-2.0.1.tgz#411cadb574c5a140d3a4b1910d40d80cc9f40b40"
@@ -15654,6 +15681,11 @@ tmp@^0.0.33:
   dependencies:
     os-tmpdir "~1.0.2"
 
+tmp@^0.2.1:
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/tmp/-/tmp-0.2.3.tgz#eb783cc22bc1e8bebd0671476d46ea4eb32a79ae"
+  integrity sha512-nZD7m9iCPC5g0pYmcaxogYKggSfLsdxl8of3Q/oIbqCqLLIO9IAF0GWjX1z9NZRHPiXv8Wex4yDCaZsgEw0Y8w==
+
 tmpl@1.0.5:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/tmpl/-/tmpl-1.0.5.tgz#8683e0b902bb9c20c4f726e3c0b69f36518c07cc"
@@ -16418,6 +16450,11 @@ v8flags@^3.2.0:
   integrity sha512-mH8etigqMfiGWdeXpaaqGfs6BndypxusHHcv2qSHyZkGEznCd/qAXCWWRzeowtL54147cktFOC4P5y+kl8d8Jg==
   dependencies:
     homedir-polyfill "^1.0.1"
+
+valid-identifier@0.0.2:
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/valid-identifier/-/valid-identifier-0.0.2.tgz#4814dff0c1b7d5ef3d7f4b678aeb26841b5b0e69"
+  integrity sha512-zaSmOW6ykXwrkX0YTuFUSoALNEKGaQHpxBJQLb3TXspRNDpBwbfrIQCZqAQ0LKBlKuyn2YOq7NNd6415hvZ33g==
 
 validate-npm-package-license@^3.0.1, validate-npm-package-license@^3.0.4:
   version "3.0.4"
