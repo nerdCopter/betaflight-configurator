@@ -101,6 +101,10 @@ jobs:
       - run: yarn gulp release ${{ matrix.releaseArgs }}
         if: ${{ !inputs.debug_build && matrix.name != 'Android' }}
 
+      - name: Android unset ANDROID_NDK_HOME
+        if: ${{ matrix.name == 'Android' }}
+        run: unset ANDROID_NDK_HOME
+
       - run: yarn gulp debug-release ${{ matrix.releaseArgs }}
         if: ${{ inputs.debug_build || matrix.name == 'Android' }}
 
