@@ -105,13 +105,16 @@ jobs:
         if: ${{ matrix.name == 'Android' }}
         run: |
           unset ANDROID_NDK_HOME
-          mkdir -p ~/.m2/com/jfrog/bintray/com.jfrog.bintray.gradle.plugin/1.7.3/
-          #mkdir /home/runner/work/betaflight-configurator/betaflight-configurator/dist_cordova
-          #mkdir /home/runner/work/betaflight-configurator/betaflight-configurator/dist_cordova/platforms
-          #mkdir /home/runner/work/betaflight-configurator/betaflight-configurator/dist_cordova/platforms/android
-          #cd /home/runner/work/betaflight-configurator/betaflight-configurator/dist_cordova/platforms/android/
+
+      - name: Android jfrog bintray
+        if: ${{ matrix.name == 'Android' }}
+        run: |
+          mkdir -p ~/.m2/repository/com/jfrog/bintray/com.jfrog.bintray.gradle.plugin/1.7.3
+          cd ~/.m2/repository/com/jfrog/bintray/com.jfrog.bintray.gradle.plugin/1.7.3/
           curl -L -O https://plugins.gradle.org/m2/com/jfrog/bintray/com.jfrog.bintray.gradle.plugin/1.7.3/com.jfrog.bintray.gradle.plugin-1.7.3.pom
           curl -L -O https://plugins.gradle.org/m2/com/jfrog/bintray/gradle/gradle-bintray-plugin/1.7.3/gradle-bintray-plugin-1.7.3.jar
+          curl -L -O https://plugins.gradle.org/m2/com/jfrog/bintray/gradle/gradle-bintray-plugin/1.7.3/gradle-bintray-plugin-1.7.3.jar.sha1
+          curl -L -O https://plugins.gradle.org/m2/com/jfrog/bintray/com.jfrog.bintray.gradle.plugin/1.7.3/com.jfrog.bintray.gradle.plugin-1.7.3.pom.sha1
           cd -
         continue-on-error: true
 
