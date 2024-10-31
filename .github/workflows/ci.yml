@@ -105,7 +105,6 @@ jobs:
         if: ${{ matrix.name == 'Android' }}
         run: |
           unset ANDROID_NDK_HOME
-          mkdir /home/runner/work/betaflight-configurator/betaflight-configurator
           mkdir /home/runner/work/betaflight-configurator/betaflight-configurator/dist_cordova
           mkdir /home/runner/work/betaflight-configurator/betaflight-configurator/dist_cordova/platforms
           mkdir /home/runner/work/betaflight-configurator/betaflight-configurator/dist_cordova/platforms/android
