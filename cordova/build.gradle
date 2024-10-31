@@ -4,4 +4,7 @@ buildscript {
         google()
         gradlePluginPortal()
     }
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
+    }
 }
