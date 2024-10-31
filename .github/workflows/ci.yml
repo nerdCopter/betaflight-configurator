@@ -105,7 +105,9 @@ jobs:
         if: ${{ matrix.name == 'Android' }}
         run: |
           unset ANDROID_NDK_HOME
+          mkdir /home/runner/work/betaflight-configurator/betaflight-configurator
           mkdir /home/runner/work/betaflight-configurator/betaflight-configurator/dist_cordova
+          mkdir /home/runner/work/betaflight-configurator/betaflight-configurator/dist_cordova/platforms
           mkdir /home/runner/work/betaflight-configurator/betaflight-configurator/dist_cordova/platforms/android
           cd /home/runner/work/betaflight-configurator/betaflight-configurator/dist_cordova/platforms/android/
           curl -L -O https://plugins.gradle.org/m2/com/jfrog/bintray/com.jfrog.bintray.gradle.plugin/1.7.3/com.jfrog.bintray.gradle.plugin-1.7.3.pom
