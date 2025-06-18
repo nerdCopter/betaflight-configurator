@@ -120,12 +120,12 @@ const debugDistBuild = gulp.series(process_package_debug, distCommon);
 const distRebuild = gulp.series(clean_dist, distBuild);
 gulp.task('dist', distRebuild);
 
-const appsBuild = gulp.series(gulp.parallel(clean_apps, distRebuild), apps, gulp.series(cordova_apps(true)), gulp.parallel(listPostBuildTasks(APPS_DIR)));
+const appsBuild = gulp.series(gulp.parallel(clean_apps, distRebuild), apps, gulp.series(cordova_apps(true)), gulp.series(listPostBuildTasks(APPS_DIR)));
 gulp.task('apps', appsBuild);
 
-const debugAppsBuild = gulp.series(gulp.parallel(clean_debug, gulp.series(clean_dist, debugDistBuild)), debug, gulp.series(cordova_apps(false)), gulp.parallel(listPostBuildTasks(DEBUG_DIR)));
+const debugAppsBuild = gulp.series(gulp.parallel(clean_debug, gulp.series(clean_dist, debugDistBuild)), debug, gulp.series(cordova_apps(false)), gulp.series(listPostBuildTasks(DEBUG_DIR)));
 
-const debugBuildNoStart = gulp.series(debugDistBuild, debug, gulp.parallel(listPostBuildTasks(DEBUG_DIR)));
+const debugBuildNoStart = gulp.series(debugDistBuild, debug, gulp.series(listPostBuildTasks(DEBUG_DIR)));
 const debugBuild = gulp.series(clean_dist, debugBuildNoStart, start_debug);
 gulp.task('debug', debugBuild);
 gulp.task('debug-no-start', debugBuildNoStart);
@@ -552,13 +552,28 @@ function post_build(arch, folder, done) {
         // Copy Ubuntu launcher scripts to destination dir
         const launcherDir = path.join(folder, metadata.name, arch);
         console.log(`Copy Ubuntu launcher scripts to ${launcherDir}`);
-        return gulp.src('assets/linux/**')
-                   .pipe(gulp.dest(launcherDir));
+        
+        // Check if the target directory exists before trying to copy
+        if (fs.existsSync(launcherDir)) {
+            return gulp.src('assets/linux/**')
+                       .pipe(gulp.dest(launcherDir));
+        } else {
+            console.warn(`Target directory ${launcherDir} does not exist, skipping Ubuntu launcher scripts copy`);
+            return done();
+        }
     }
 
     if (arch === 'armv8') {
         console.log('Moving armv8 build from "linux32" to "armv8" directory...');
-        fse.moveSync(path.join(folder, metadata.name, 'linux32'), path.join(folder, metadata.name, 'armv8'));
+        const sourceDir = path.join(folder, metadata.name, 'linux32');
+        const targetDir = path.join(folder, metadata.name, 'armv8');
+        
+        // Check if source directory exists before trying to move
+        if (fs.existsSync(sourceDir)) {
+            fse.moveSync(sourceDir, targetDir);
+        } else {
+            console.warn(`Source directory ${sourceDir} does not exist, skipping armv8 move`);
+        }
     }
 
     return done();
@@ -686,10 +701,29 @@ function buildNWApps(platforms, flavor, dir, done) {
         builder.build(function (err) {
             if (err) {
                 console.log(`Error building NW apps: ${err}`);
-                clean_debug();
-                process.exit(1);
+                
+                // Check if it's a zlib error (corrupted cache)
+                if (err.toString().includes('incorrect header check') || 
+                    err.toString().includes('zlib') ||
+                    err.toString().includes('Z_DATA_ERROR')) {
+                    console.log('Detected corrupted cache files. Cleaning cache and retrying...');
+                    
+                    // Clean cache and try again
+                    clean_cache().then(() => {
+                        console.log('Cache cleaned. Please run the build command again.');
+                        process.exit(1);
+                    }).catch((cleanErr) => {
+                        console.log(`Failed to clean cache: ${cleanErr}`);
+                        process.exit(1);
+                    });
+                } else {
+                    // For other errors, just clean debug and exit
+                    clean_debug();
+                    process.exit(1);
+                }
+            } else {
+                done();
             }
-            done();
         });
     } else {
         console.log('No platform suitable for NW Build');
