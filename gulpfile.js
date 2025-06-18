@@ -367,25 +367,19 @@ function dist_src() {
         .pipe(gulp.dest(DIST_DIR));
     } 
     
-    // For desktop builds, copy non-JS files and specific JS files separately
-    const nonJsFiles = gulp.src([
+    // For desktop builds, copy all files in one go with specific includes
+    return gulp.src([
         './src/**/*',
         '!./src/**/*.js',
         '!./src/**/*.vue', 
         '!./src/css/dropdown-lists/LICENSE',
         '!./src/support/**',
         '!./src/**/*.less',
-    ], { base: 'src', allowEmpty: true })
-    .pipe(gulp.dest(DIST_DIR));
-    
-    // Copy the specific JS files we need
-    const jsFiles = gulp.src([
+        // Explicitly include the JS files we need
         './src/js/workers/hex_parser.js',
         './src/js/tabs/map.js',
     ], { base: 'src', allowEmpty: true })
     .pipe(gulp.dest(DIST_DIR));
-    
-    return nonJsFiles;
 }
 
 function dist_node_modules_css() {
@@ -692,6 +686,11 @@ function buildNWAppsWrapper(platforms, flavor, dir, done) {
 
 function buildNWApps(platforms, flavor, dir, done) {
     if (platforms.length > 0) {
+        // Ensure the build directory exists before nw-builder tries to use it
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        
         const builder = new NwBuilder(Object.assign({
             buildDir: dir,
             platforms,
