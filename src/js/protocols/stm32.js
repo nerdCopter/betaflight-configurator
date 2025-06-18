@@ -137,11 +137,22 @@ STM32_protocol.prototype.connect = function (port, baud, hex, options, callback)
                         startFlashing();
                     } else {
                         failedAttempts++;
-                        if (failedAttempts > 100) {
+                        if (failedAttempts > 150) { // Increased from 100 to 150 (15 seconds instead of 10)
                             clearInterval(dfuWaitInterval);
-                            console.log(`failed to get DFU connection, gave up after 10 seconds`);
-                            gui_log(i18n.getMessage('serialPortOpenFail'));
-                            GUI.connect_lock = false;
+                            console.log(`failed to get DFU connection, gave up after 15 seconds`);
+                            
+                            // Try to connect via serial bootloader as fallback
+                            console.log('Attempting serial bootloader connection as fallback...');
+                            serial.connect(self.port, {bitrate: self.baud, parityBit: 'even', stopBits: 'one'}, function (openInfo) {
+                                if (openInfo) {
+                                    console.log('Serial bootloader connection successful');
+                                    self.initialize();
+                                } else {
+                                    console.log('Serial bootloader connection failed');
+                                    gui_log(i18n.getMessage('serialPortOpenFail'));
+                                    GUI.connect_lock = false;
+                                }
+                            });
                         }
                     }
                 }
@@ -494,15 +505,13 @@ STM32_protocol.prototype.upload_procedure = function (step) {
 
                 if (sendCounter++ > 3) {
                     // stop retrying, its too late to get any response from MCU
-                    console.log('STM32 - no response from bootloader, disconnecting');
-
-                    TABS.firmware_flasher.flashingMessage(i18n.getMessage('stm32ResponseBootloaderFailed'), TABS.firmware_flasher.FLASH_MESSAGE_TYPES.INVALID);
+                    console.log(`STM32 - no response from bootloader after ${sendCounter-1} attempts, checking for DFU mode...`);
 
                     GUI.interval_remove('stm32_initialize_mcu');
                     GUI.interval_remove('STM32_timeout');
-
-                    // exit
-                    self.upload_procedure(99);
+                    
+                    // Check if DFU mode is available before giving up
+                    self.checkForDfuMode();
                 }
             }, 250, true);
 
@@ -874,7 +883,63 @@ STM32_protocol.prototype.upload_procedure = function (step) {
     }
 };
 
+STM32_protocol.prototype.checkForDfuMode = function () {
+    const self = this;
+    
+    console.log('STM32 - Checking for DFU mode availability...');
+    
+    TABS.firmware_flasher.flashingMessage(
+        i18n.getMessage('stm32CheckingDfuMode'), 
+        TABS.firmware_flasher.FLASH_MESSAGE_TYPES.NEUTRAL
+    );
+    
+    // First disconnect the current serial connection
+    serial.disconnect(() => {
+        // Give the device a moment to settle
+        setTimeout(() => {
+            let dfuCheckAttempts = 0;
+            const maxDfuCheckAttempts = 30; // 3 seconds total
+            
+            const checkDfuAvailability = () => {
+                // Check for DFU devices
+                PortHandler.check_usb_devices((dfu_available) => {
+                    if (dfu_available) {
+                        console.log('STM32 - DFU mode detected, switching to DFU flashing');
+                        TABS.firmware_flasher.flashingMessage(
+                            i18n.getMessage('stm32DfuModeDetected'), 
+                            TABS.firmware_flasher.FLASH_MESSAGE_TYPES.VALID
+                        );
+                        
+                        // Use DFU flashing instead
+                        STM32DFU.connect(usbDevices, self.hex, self.options);
+                    } else {
+                        dfuCheckAttempts++;
+                        if (dfuCheckAttempts < maxDfuCheckAttempts) {
+                            // Try again after 100ms
+                            setTimeout(checkDfuAvailability, 100);
+                        } else {
+                            // No DFU mode available, show error
+                            console.log('STM32 - No DFU mode detected after 3 seconds, flashing failed');
+                            TABS.firmware_flasher.flashingMessage(
+                                i18n.getMessage('stm32ResponseBootloaderFailed'), 
+                                TABS.firmware_flasher.FLASH_MESSAGE_TYPES.INVALID
+                            );
+                            
+                            self.cleanup();
+                        }
+                    }
+                });
+            };
+            
+            // Start checking for DFU availability
+            checkDfuAvailability();
+        }, 1000); // Wait 1 second for device to settle
+    });
+};
+
 STM32_protocol.prototype.cleanup = function () {
+    const self = this;
+    
     PortUsage.reset();
 
     // unlocking connect button

@@ -495,6 +495,12 @@
     "stm32UnprotectInitFailed": {
         "message": "Failed to initiate unprotect routine"
     },
+    "stm32CheckingDfuMode": {
+        "message": "Checking for DFU mode..."
+    },
+    "stm32DfuModeDetected": {
+        "message": "DFU mode detected, switching to DFU flashing"
+    },
     "noConfigurationReceived": {
         "message": "No configuration received within <span class=\"message-negative\">10 seconds</span>, communication <span class=\"message-negative\">failed</span>"
     },
