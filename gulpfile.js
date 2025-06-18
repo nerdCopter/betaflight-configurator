@@ -52,6 +52,8 @@ const nwBuilderOptions = {
     macPlist: { 'CFBundleDisplayName': 'Betaflight Configurator'},
     winIco: './src/images/bf_icon.ico',
     zip: false,
+    appName: 'betaflight-configurator',
+    verbose: true,
 };
 
 const nwArmVersion = 'nw60-arm64_2022-01-08';
@@ -355,26 +357,35 @@ function dist_src() {
     const platforms = getPlatforms();
     const isAndroid = platforms.includes('android');
 
-    const distSources = [
+    if (isAndroid) {
+        return gulp.src([
+            './src/**/*',
+            '!./src/css/dropdown-lists/LICENSE',
+            '!./src/support/**',
+            '!./src/**/*.less',
+        ], { base: 'src', allowEmpty: true })
+        .pipe(gulp.dest(DIST_DIR));
+    } 
+    
+    // For desktop builds, copy non-JS files and specific JS files separately
+    const nonJsFiles = gulp.src([
         './src/**/*',
         '!./src/**/*.js',
-        '!./src/**/*.vue',
+        '!./src/**/*.vue', 
         '!./src/css/dropdown-lists/LICENSE',
         '!./src/support/**',
         '!./src/**/*.less',
+    ], { base: 'src', allowEmpty: true })
+    .pipe(gulp.dest(DIST_DIR));
+    
+    // Copy the specific JS files we need
+    const jsFiles = gulp.src([
         './src/js/workers/hex_parser.js',
         './src/js/tabs/map.js',
-    ];
-
-    const distSourcesCordova = [
-        './src/**/*',
-        '!./src/css/dropdown-lists/LICENSE',
-        '!./src/support/**',
-        '!./src/**/*.less',
-    ];
-
-    return gulp.src(isAndroid ? distSourcesCordova : distSources, { base: 'src' })
-        .pipe(gulp.dest(DIST_DIR));
+    ], { base: 'src', allowEmpty: true })
+    .pipe(gulp.dest(DIST_DIR));
+    
+    return nonJsFiles;
 }
 
 function dist_node_modules_css() {
@@ -671,7 +682,7 @@ function buildNWApps(platforms, flavor, dir, done) {
             platforms,
             flavor,
         }, nwBuilderOptions));
-        builder.on('log', console.log);
+        
         builder.build(function (err) {
             if (err) {
                 console.log(`Error building NW apps: ${err}`);
@@ -685,6 +696,7 @@ function buildNWApps(platforms, flavor, dir, done) {
         done();
     }
 }
+
 
 function getGitRevision(done, callback, isReleaseBuild) {
     let gitRevision = 'norevision';
