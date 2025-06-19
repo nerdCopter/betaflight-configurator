@@ -52,6 +52,7 @@ const nwBuilderOptions = {
     macPlist: { 'CFBundleDisplayName': 'Betaflight Configurator'},
     winIco: './src/images/bf_icon.ico',
     zip: false,
+    downloadUrl: 'https://npm.taobao.org/mirrors/nwjs',
 };
 
 const nwArmVersion = 'nw60-arm64_2022-01-08';
