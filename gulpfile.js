@@ -52,7 +52,7 @@ const nwBuilderOptions = {
     macPlist: { 'CFBundleDisplayName': 'Betaflight Configurator'},
     winIco: './src/images/bf_icon.ico',
     zip: false,
-    downloadUrl: 'https://npm.taobao.org/mirrors/nwjs',
+    downloadUrl: 'https://dl.node-webkit.org/',
 };
 
 const nwArmVersion = 'nw60-arm64_2022-01-08';
@@ -1223,7 +1223,7 @@ async function cordova_release() {
         .pipe(gulp.dest(RELEASE_DIR));
 }
 
-function fix_hex_parser() {
+function fix_hex_parser(done) {
     // Simple fix to ensure hex_parser.js is copied to dist/js/workers/
     const fs = require('fs');
     const path = require('path');
@@ -1245,6 +1245,9 @@ function fix_hex_parser() {
         console.warn('⚠ Warning: hex_parser.js not found in source');
     }
     
-    // Return a resolved promise since this is a gulp task
-    return Promise.resolve();
+    // Call done() to signal task completion
+    done();
 }
+
+// Define fix_hex_parser as a standalone gulp task for testing
+gulp.task('fix_hex_parser', fix_hex_parser);
