@@ -578,7 +578,14 @@ function debug(done) {
     const platforms = getPlatforms();
     removeItem(platforms, 'android');
 
-    buildNWAppsWrapper(platforms, 'sdk', DEBUG_DIR, done);
+    // Ensure we have a valid NW.js cache before building
+    ensureNWjsCache((err) => {
+        if (err) {
+            console.error('Failed to download NW.js:', err);
+            return done(err);
+        }
+        buildNWAppsWrapper(platforms, 'sdk', DEBUG_DIR, done);
+    });
 }
 
 function injectARMCache(flavor, done) {
@@ -1264,4 +1271,94 @@ async function cordova_release() {
     return gulp.src(`${CORDOVA_DIST_DIR}platforms/android/app/build/outputs/bundle/release/app.aab`)
         .pipe(rename(filename))
         .pipe(gulp.dest(RELEASE_DIR));
+}
+
+// Fix NW.js download URL issue where dl.nwjs.io returns 302 redirects
+function ensureNWjsCache(done) {
+    const cacheFile = './cache/nw.tgz';
+    const extractedDir = `./cache/nwjs-sdk-v${nwBuilderOptions.version}-linux-x64`;
+    const correctUrl = `https://dl.node-webkit.org/v${nwBuilderOptions.version}/nwjs-sdk-v${nwBuilderOptions.version}-linux-x64.tar.gz`;
+    
+    // Check if we already have the extracted NW.js runtime
+    if (fs.existsSync(path.join(extractedDir, 'nw'))) {
+        console.log('Valid NW.js runtime found in cache, skipping download');
+        return done();
+    }
+    
+    // Check if we already have a valid downloaded archive
+    if (fs.existsSync(cacheFile)) {
+        const stats = fs.statSync(cacheFile);
+        // Check if file is larger than 1MB (should be ~164MB for valid archive)
+        if (stats.size > 1024 * 1024) {
+            console.log('Valid NW.js archive found, extracting...');
+            return extractNWjs(cacheFile, extractedDir, done);
+        } else {
+            console.log('Invalid NW.js cache found, removing and re-downloading');
+            fs.unlinkSync(cacheFile);
+        }
+    }
+    
+    // Ensure cache directory exists
+    if (!fs.existsSync('./cache')) {
+        fs.mkdirSync('./cache');
+    }
+    
+    console.log(`Downloading NW.js from correct URL: ${correctUrl}`);
+    
+    const https = require('https');
+    const fileStream = fs.createWriteStream(cacheFile);
+    
+    https.get(correctUrl, (response) => {
+        if (response.statusCode !== 200) {
+            return done(new Error(`Failed to download NW.js: HTTP ${response.statusCode}`));
+        }
+        
+        const totalBytes = parseInt(response.headers['content-length'], 10);
+        let downloadedBytes = 0;
+        
+        response.on('data', (chunk) => {
+            downloadedBytes += chunk.length;
+            const percent = ((downloadedBytes / totalBytes) * 100).toFixed(1);
+            process.stdout.write(`> NW.js download: ${percent}% (${(downloadedBytes / 1024 / 1024).toFixed(1)}MB)\r`);
+        });
+        
+        response.pipe(fileStream);
+        
+        fileStream.on('finish', () => {
+            fileStream.close();
+            console.log('\n> NW.js download completed successfully');
+            extractNWjs(cacheFile, extractedDir, done);
+        });
+        
+        fileStream.on('error', (err) => {
+            fs.unlinkSync(cacheFile);
+            done(err);
+        });
+        
+    }).on('error', (err) => {
+        done(err);
+    });
+}
+
+function extractNWjs(archivePath, extractDir, done) {
+    console.log('Extracting NW.js runtime...');
+    const targz = require('targz');
+    
+    targz.decompress({
+        src: archivePath,
+        dest: './cache'
+    }, (err) => {
+        if (err) {
+            console.error('Failed to extract NW.js:', err);
+            return done(err);
+        }
+        
+        // Verify the main executable exists
+        if (fs.existsSync(path.join(extractDir, 'nw'))) {
+            console.log('NW.js runtime extracted successfully');
+            done();
+        } else {
+            done(new Error('NW.js extraction failed - executable not found'));
+        }
+    });
 }
