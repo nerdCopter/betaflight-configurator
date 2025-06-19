@@ -100,6 +100,7 @@ function process_package_debug(done) {
 
 const distCommon = gulp.series(
     dist_src,
+    fix_hex_parser,
     dist_node_modules_css,
     dist_ol_css,
     dist_less,
@@ -1220,4 +1221,30 @@ async function cordova_release() {
     return gulp.src(`${CORDOVA_DIST_DIR}platforms/android/app/build/outputs/bundle/release/app.aab`)
         .pipe(rename(filename))
         .pipe(gulp.dest(RELEASE_DIR));
+}
+
+function fix_hex_parser() {
+    // Simple fix to ensure hex_parser.js is copied to dist/js/workers/
+    const fs = require('fs');
+    const path = require('path');
+    
+    const srcFile = './src/js/workers/hex_parser.js';
+    const destDir = './dist/js/workers/';
+    const destFile = path.join(destDir, 'hex_parser.js');
+    
+    // Ensure directory exists
+    if (!fs.existsSync(destDir)) {
+        fs.mkdirSync(destDir, { recursive: true });
+    }
+    
+    // Copy the file
+    if (fs.existsSync(srcFile)) {
+        fs.copyFileSync(srcFile, destFile);
+        console.log('✓ Copied hex_parser.js to dist/js/workers/');
+    } else {
+        console.warn('⚠ Warning: hex_parser.js not found in source');
+    }
+    
+    // Return a resolved promise since this is a gulp task
+    return Promise.resolve();
 }
